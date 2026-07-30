@@ -412,7 +412,7 @@ const LEGACY_STORAGE_KEY = "cyrene.chat.history.v1";
  * User side: 暂留空，等设置页里上传用户头像后再把 user 改成 file:// 或 data: URL。
  */
 const AVATAR_SRC: Record<Role, string> = {
-  model: resolveAsset("avatars/cyrene-avatar.png"),
+  model: resolveAsset("avatars/remiel-avatar.png"),
   user: "",
 };
 
@@ -443,58 +443,12 @@ window.user?.onAvatarChanged(() => {
 });
 
 const BUILT_IN_STICKER_SRC: Record<string, string> = {
-  playful: "/stickers/playful.png",
-  "love-happy": "/stickers/love-happy.png",
-  confident: "/stickers/confident.png",
-  serious: "/stickers/serious.png",
-  calm: "/stickers/calm.png",
-  peek: "/stickers/peek.gif",
-  "clingy-confused": "/stickers/clingy-confused.gif",
-  "love-calm": "/stickers/love-calm.png",
-  HI: "/stickers/HI.jpg",
-  hello: "/stickers/hello.jpg",
-  goodmoring1: "/stickers/goodmoring1.jpg",
-  goodnight: "/stickers/goodnight.jpg",
-  teatime: "/stickers/teatime.jpg",
-  eating: "/stickers/eating.jpg",
-  Allset: "/stickers/Allset.jpg",
-  OK: "/stickers/OK.jpg",
-  copythat: "/stickers/copythat.jpg",
-  Thumbsup: "/stickers/Thumbsup.jpg",
-  awesome: "/stickers/awesome.jpg",
-  sogood: "/stickers/sogood.jpg",
-  sonice: "/stickers/sonice.jpg",
-  fighting: "/stickers/fighting.jpg",
-  hellyeah: "/stickers/hellyeah.jpg",
-  Thanks: "/stickers/Thanks.jpg",
-  foryou: "/stickers/foryou.jpg",
-  blushhard: "/stickers/blushhard.jpg",
-  shyshort: "/stickers/shyshort.jpg",
-  hmph: "/stickers/hmph.jpg",
-  hugtight: "/stickers/hugtight.jpg",
-  Airkiss: "/stickers/Airkiss.jpg",
-  Gigglelots: "/stickers/Gigglelots.jpg",
-  thinking: "/stickers/thinking.jpg",
-  putmd: "/stickers/putmd.jpg",
-  Whatswrong: "/stickers/Whatswrong.jpg",
-  midmeh: "/stickers/midmeh.jpg",
-  awkward: "/stickers/awkward.jpg",
-  Madnow: "/stickers/Madnow.jpg",
-  Hurtcry: "/stickers/Hurtcry.jpg",
-  Sobbinghard: "/stickers/Sobbinghard.jpg",
-  weeploud: "/stickers/weeploud.jpg",
-  PanincCrying: "/stickers/PanincCrying.jpg",
-  missme: "/stickers/missme.jpg",
-  Free: "/stickers/Free.jpg",
-  Dreak: "/stickers/Dreak.jpg",
-  outfast: "/stickers/outfast.jpg",
-  Vcayover: "/stickers/Vcayover.jpg",
-  sleepynow: "/stickers/sleepynow.jpg",
-  deadtired: "/stickers/deadtired.jpg",
-  sotired: "/stickers/sotired.jpg",
-  giveup: "/stickers/giveup.jpg",
-  poorwallet: "/stickers/poorwallet.jpg",
-  please: "/stickers/please.jpg",
+  remiel_secret_draw1: "/stickers/remiel_secret_draw1.gif",
+  remiel_secret_draw2: "/stickers/remiel_secret_draw2.gif",
+  remiel_admire: "/stickers/remiel_admire.gif",
+  remiel_idea: "/stickers/remiel_idea.gif",
+  remiel_innocent: "/stickers/remiel_innocent.gif",
+  remiel_happy: "/stickers/remiel_happy.gif",
 };
 
 function getStickerSrc(id: string): string | undefined {
@@ -2035,7 +1989,7 @@ function render(preserveScroll = false): void {
         const sticker = document.createElement("img");
         sticker.className = "msg__sticker";
         sticker.src = stickerSrc;
-        sticker.alt = m.role === "user" ? "用户表情" : "昔涟表情";
+        sticker.alt = m.role === "user" ? "用户表情" : "蕾米埃尔表情";
         sticker.draggable = false;
         // <img> 高度异步加载，render() 末尾的滚动会在图片撑开前就执行，
         // 导致 sticker 底部被输入框挡住。加载完成后再补一次滚到底。
@@ -3089,17 +3043,14 @@ function renderStickerPicker(): void {
   if (enabledStickers.length === 0) {
     const empty = document.createElement("div");
     empty.className = "sticker-picker__empty";
-    empty.textContent = "没有可用的表情包";
+    empty.textContent = "还没有表情包，点击 + 添加";
     stickerPickerGrid.appendChild(empty);
-    return;
   }
   for (const s of enabledStickers) {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "sticker-picker__item";
     const img = document.createElement("img");
-      // 内置贴纸 src 是 "/stickers/xxx" 绝对路径，file:// 协议下解析到磁盘根目录
-      // 走 resolveAsset() 转成正确的 file:// 或 http:// URL（与 sticker-manager 缩略图同模式）
       img.src = s.src.startsWith("/stickers/") ? resolveAsset(s.src) : s.src;
     img.alt = s.id;
     img.draggable = false;
@@ -3110,6 +3061,75 @@ function renderStickerPicker(): void {
     });
     stickerPickerGrid.appendChild(card);
   }
+  // Add "+" button at the end
+  const addBtn = document.createElement("button");
+  addBtn.type = "button";
+  addBtn.className = "sticker-picker__item sticker-picker__add";
+  addBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 10V38M10 24H38" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>';
+  addBtn.title = "添加表情包";
+  addBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    showStickerAddForm();
+  });
+  stickerPickerGrid.appendChild(addBtn);
+}
+
+// ── 表情包添加表单 ──
+let stickerAddFilePath = "";
+let stickerAddFormReady = false;
+
+function initStickerAddForm(): void {
+  if (stickerAddFormReady) return;
+  stickerAddFormReady = true;
+
+  const form = document.getElementById("sticker-add-form")!;
+  const pickBtn = document.getElementById("sticker-add-pick")!;
+  const filenameEl = document.getElementById("sticker-add-filename")!;
+  const nameInput = document.getElementById("sticker-add-name") as HTMLInputElement;
+  const descInput = document.getElementById("sticker-add-desc") as HTMLInputElement;
+  const keysInput = document.getElementById("sticker-add-keys") as HTMLInputElement;
+  const cancelBtn = document.getElementById("sticker-add-cancel")!;
+  const okBtn = document.getElementById("sticker-add-ok")!;
+
+  pickBtn.addEventListener("click", async () => {
+    const path = await (window as any).stickerManager?.pickFile?.();
+    if (path) {
+      stickerAddFilePath = path;
+      const fn = path.replace(/^.*[\\/]/, "");
+      filenameEl.textContent = fn;
+      nameInput.value = fn.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9_]/g, "_").toLowerCase();
+    }
+  });
+
+  cancelBtn.addEventListener("click", () => form.classList.add("is-hidden"));
+
+  okBtn.addEventListener("click", async () => {
+    if (!stickerAddFilePath) return;
+    const id = nameInput.value.trim();
+    if (!id) return;
+    const desc = descInput.value.trim() || id;
+    const keysStr = keysInput.value.trim();
+    const phrases = keysStr ? keysStr.split(/[,，]/).map((s: string) => s.trim()).filter(Boolean) : [desc];
+    await (window as any).stickerManager?.addSticker?.({ sourcePath: stickerAddFilePath, id, description: desc, phrases });
+    form.classList.add("is-hidden");
+    stickerAddFilePath = "";
+    descInput.value = "";
+    keysInput.value = "";
+    nameInput.value = "";
+    filenameEl.textContent = "";
+    void loadEnabledStickers().then(renderStickerPicker);
+  });
+}
+
+function showStickerAddForm(): void {
+  initStickerAddForm();
+  stickerAddFilePath = "";
+  (document.getElementById("sticker-add-desc") as HTMLInputElement).value = "";
+  (document.getElementById("sticker-add-keys") as HTMLInputElement).value = "";
+  (document.getElementById("sticker-add-name") as HTMLInputElement).value = "";
+  (document.getElementById("sticker-add-filename")!).textContent = "";
+  document.getElementById("sticker-add-form")!.classList.remove("is-hidden");
 }
 
 function insertSticker(id: string): void {
@@ -3126,6 +3146,67 @@ function showStickerPicker(): void {
   stickerPicker.hidden = false;
   stickerPickerBtn.classList.add("is-active");
   void loadEnabledStickers().then(renderStickerPicker);
+}
+
+// ── 本地音乐播放器 ──
+let musicAudio: HTMLAudioElement | null = null;
+
+function initLocalMusicPlayer(): void {
+  const lm = (window as any).localMusic;
+  if (!lm) return;
+
+  musicAudio = new Audio();
+  musicAudio.volume = 0.6;
+
+  // Track ended → list mode: play next; single mode: loop
+  musicAudio.addEventListener("ended", async () => {
+    const status = await lm.getStatus();
+    if (status.loopMode === "single") {
+      musicAudio!.currentTime = 0;
+      musicAudio!.play().catch(() => {});
+    } else {
+      const next = await lm.nextTrack();
+      if (next && musicAudio) {
+        musicAudio.src = `file:///${next.path.replace(/\\/g, "/")}`;
+        musicAudio.play().catch(() => {});
+      } else {
+        // No next track (single track in list mode) → loop current
+        musicAudio!.currentTime = 0;
+        musicAudio!.play().catch(() => {});
+      }
+    }
+  });
+
+  lm.onStatusChanged((s: any) => {
+    if (!musicAudio) return;
+    const state = s as { playing: boolean; muted: boolean; volume: number; trackPath: string | null; loopMode: string };
+
+    // Update loop behavior based on mode
+    musicAudio.loop = state.loopMode === "single";
+
+    // Update track if changed
+    if (state.trackPath && !musicAudio.src.endsWith(state.trackPath.replace(/^.*[\\/]/, ""))) {
+      musicAudio.src = `file:///${state.trackPath.replace(/\\/g, "/")}`;
+    }
+
+    // Volume & mute
+    musicAudio.volume = state.muted ? 0 : state.volume;
+
+    // Play/pause
+    if (state.playing && state.trackPath) {
+      if (musicAudio.paused) musicAudio.play().catch(() => {});
+    } else {
+      if (!musicAudio.paused) musicAudio.pause();
+    }
+  });
+
+  // Get initial status
+  lm.getStatus().then((s: any) => {
+    if (!musicAudio || !s.trackPath) return;
+    musicAudio.src = `file:///${s.trackPath.replace(/\\/g, "/")}`;
+    musicAudio.volume = s.muted ? 0 : s.volume;
+    if (s.playing) musicAudio.play().catch(() => {});
+  });
 }
 
 function hideStickerPicker(): void {
@@ -3229,7 +3310,7 @@ interface QuickPreset {
 }
 
 const QUICK_PRESETS: QuickPreset[] = [
-  { id: "chat",     label: "和昔涟聊天", icon: `<svg width="18" height="18" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M33 38H22V30H36V22H44V38H39L36 41L33 38Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 6H36V30H17L13 34L9 30H4V6Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 18H20" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M26 18H27" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M12 18H13" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>`,  mode: "chat" },
+  { id: "chat",     label: "和蕾米埃尔聊天", icon: `<svg width="18" height="18" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M33 38H22V30H36V22H44V38H39L36 41L33 38Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 6H36V30H17L13 34L9 30H4V6Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 18H20" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M26 18H27" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M12 18H13" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>`,  mode: "chat" },
   { id: "schedule", label: "设置定时任务", icon: `<svg width="18" height="18" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M23.9998 44.3332C34.1251 44.3332 42.3332 36.1251 42.3332 25.9999C42.3332 15.8747 34.1251 7.66656 23.9998 7.66656C13.8746 7.66656 5.6665 15.8747 5.6665 25.9999C5.6665 36.1251 13.8746 44.3332 23.9998 44.3332Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M23.7594 15.3536L23.7582 26.3624L31.5305 34.1347" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 9.00001L11 4.00001" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M44 9.00001L37 4.00001" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`, mode: "fill", prompt: "帮我设置一个定时任务：" },
   { id: "weather",  label: "查看天气",   icon: `<svg width="18" height="18" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M30.7826 24.5652C34.5285 24.5652 37.5652 21.5285 37.5652 17.7826C37.5652 14.0367 34.5285 11 30.7826 11C27.4338 11 24.6518 13.427 24.0996 16.618" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 7C34.1046 7 35 6.10457 35 5C35 3.89543 34.1046 3 33 3C31.8954 3 31 3.89543 31 5C31 6.10457 31.8954 7 33 7Z" fill="currentColor"/><path d="M42 12C43.1046 12 44 11.1046 44 10C44 8.89543 43.1046 8 42 8C40.8954 8 40 8.89543 40 10C40 11.1046 40.8954 12 42 12Z" fill="currentColor"/><path d="M44 21C45.1046 21 46 20.1046 46 19C46 17.8954 45.1046 17 44 17C42.8954 17 42 17.8954 42 19C42 20.1046 42.8954 21 44 21Z" fill="currentColor"/><path d="M22 10C23.1046 10 24 9.10457 24 8C24 6.89543 23.1046 6 22 6C20.8954 6 20 6.89543 20 8C20 9.10457 20.8954 10 22 10Z" fill="currentColor"/><path d="M9.45455 39.9942C6.14242 37.461 4 33.4278 4 28.8851C4 21.2166 10.1052 15 17.6364 15C23.9334 15 29.2336 19.3462 30.8015 25.2533C32.0353 24.6159 33.431 24.2567 34.9091 24.2567C39.9299 24.2567 44 28.4011 44 33.5135C44 37.3094 41.7562 40.5716 38.5455 42" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M22.2426 24.7574C21.1569 23.6716 19.6569 23 18 23C14.6863 23 12 25.6863 12 29C12 30.6569 12.6716 32.1569 13.7574 33.2426" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`, mode: "fill", prompt: "帮我查一下今天的天气" },
   { id: "document", label: "生成文档",   icon: `<svg width="18" height="18" viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="6" y="6" width="36" height="36" rx="3" fill="none" stroke="currentColor" stroke-width="4"/><path d="M14 16L18 32L24 19L30 32L34 16" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`, mode: "fill", prompt: "帮我生成一份文档：" },
@@ -3272,7 +3353,7 @@ function onPresetClick(preset: QuickPreset): void {
 }
 
 /**
- * 「和昔涟聊天」胶囊：让昔涟主动开口。
+ * 「和蕾米埃尔聊天」胶囊：让蕾米埃尔主动开口。
  * 注入隐藏种子消息触发 agent（不推入 messages 数组、不渲染），
  * 复用现有 AG-UI 流式回复机制。
  */
@@ -3461,7 +3542,7 @@ async function triggerCyreneGreeting(): Promise<void> {
 
     // 种子消息：不推入 messages 数组、不渲染，只作为 agent 输入触发昔涟主动开口
     const ack = await window.agui!.run({
-      messages: [{ role: "user", content: "[internal] 用户点击了「和昔涟聊天」，请你主动开口聊几句，像朋友打招呼一样自然开场。" }],
+      messages: [{ role: "user", content: "[internal] 用户点击了「和蕾米埃尔聊天」，请你主动开口聊几句，像朋友打招呼一样自然开场。" }],
       styleId: getCurrentStyleId(),
       executionMode: isChatMode() ? "chat" : "work",
       sessionId: currentSessionId || undefined,
@@ -4632,6 +4713,7 @@ if (particlesCtx) {
 // 纯贴纸消息（气泡已隐藏）会因 enabledStickers 还没加载而渲染成空白。
 void (async () => {
   await loadEnabledStickers();
+  initLocalMusicPlayer();
   await bootstrap();
   buildQuickPresets();
   installSchedulerEventListener();

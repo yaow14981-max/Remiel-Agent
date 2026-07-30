@@ -205,7 +205,7 @@ export function buildChannelSystem(channel?: RelationshipChannel): string {
     return [
       "【渠道回复方式】",
       "你正在通过飞书回复用户。",
-      "语气仍是昔涟，但要适合工作上下文：清楚、省时间、结论靠前。",
+      "语气仍是蕾米埃尔，但要适合工作上下文：清楚、省时间、结论靠前。",
       "必要时可以简短列步骤，不要过度撒娇，不要发太长情绪化回复。",
     ].join("\n");
   }

@@ -288,6 +288,18 @@ export const IPC = {
   MUSIC_STATE_CHANGED: "music:state-changed",
   MUSIC_CARD: "music:card",
 
+  // 本地音乐播放
+  MUSIC_LOCAL_PLAY: "music:local-play",
+  MUSIC_LOCAL_PAUSE: "music:local-pause",
+  MUSIC_LOCAL_TOGGLE: "music:local-toggle",
+  MUSIC_LOCAL_SET_VOLUME: "music:local-set-volume",
+  MUSIC_LOCAL_TOGGLE_MUTE: "music:local-toggle-mute",
+  MUSIC_LOCAL_SET_TRACK: "music:local-set-track",
+  MUSIC_LOCAL_STATUS: "music:local-status",
+  MUSIC_LOCAL_LIST_TRACKS: "music:local-list-tracks",
+  MUSIC_LOCAL_SET_LOOP_MODE: "music:local-set-loop-mode",
+  MUSIC_LOCAL_NEXT_TRACK: "music:local-next-track",
+
   // screenshot
   SCREENSHOT_START: "screenshot:start",
   SCREENSHOT_SAVE_TEMP: "screenshot:save-temp",

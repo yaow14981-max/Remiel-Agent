@@ -126,12 +126,12 @@ body {
 	}
 
 	[data-ui-theme="pearl-white"] .nav-item__avatar {
-	  content: url("/icons/cyrene-avatar-line.svg");
+	  content: url("/icons/remiel-avatar-line-white.png");
 	  display: block;
 	}
 
 	[data-ui-theme="pearl-white"] .panel-heading__avatar {
-	  content: url("/icons/cyrene-avatar-line.svg");
+	  content: url("/icons/remiel-avatar-line-white.png");
 	  display: block;
 	}
 

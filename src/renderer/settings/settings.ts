@@ -388,6 +388,7 @@ interface GeneralSettings {
   chatSocialContextEnabled: boolean;
   musicEnabled: boolean;
   musicVolume: number;
+  musicTrack?: string;
   soundEnabled: boolean;
   soundVolume: number;
   petAlwaysOnTop: boolean;
@@ -730,7 +731,7 @@ const closeBtn = document.getElementById("close-btn") as HTMLButtonElement;
 const clickSound = new Audio("/audio/click.mp3");
 clickSound.preload = "auto";
 
-const bgmAudio = new Audio("/audio/bgm.mp3");
+const bgmAudio = new Audio("/audio/bgm.ogg");
 bgmAudio.preload = "auto";
 bgmAudio.loop = true;
 const apiForm = document.getElementById("api-form") as HTMLFormElement;
@@ -837,6 +838,12 @@ const stickerEnabledInput = document.getElementById("sticker-enabled") as HTMLIn
 const stickerSizeSelect = document.getElementById("sticker-size") as HTMLElement;
 const musicEnabledInput = document.getElementById("music-enabled") as HTMLInputElement;
 const musicVolumeInput = document.getElementById("music-volume") as HTMLInputElement;
+const musicTrackSelect = document.getElementById("music-track-select") as HTMLSelectElement;
+const musicTrackRow = document.getElementById("music-track-row") as HTMLElement;
+const musicTrackName = document.getElementById("music-track-name") as HTMLElement;
+const musicLoopToggle = document.getElementById("music-loop-toggle") as HTMLButtonElement;
+const musicLoopLabel = document.getElementById("music-loop-label") as HTMLElement;
+let currentLoopMode: "single" | "list" = "list";
 const soundEnabledInput = document.getElementById("sound-enabled") as HTMLInputElement;
 const soundVolumeInput = document.getElementById("sound-volume") as HTMLInputElement;
 const petAlwaysOnTopInput = document.getElementById("pet-always-on-top") as HTMLInputElement;
@@ -882,10 +889,10 @@ const NAV_LABELS: Record<string, { emoji: string; title: string; hint: string }>
 	  skills: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>Skills</title><rect x="9" y="8" width="30" height="36" rx="2" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M18 4V10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M30 4V10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 19L32 19" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 27L28 27" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 35H24" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`, title: "Skills", hint: "管理 agent 的 skill 指令（约束如何用工具）" },
   plugins: { emoji: "🔌", title: "MCP", hint: "扩展功能与第三方集成" },
 	  preferences: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>偏好设置</title><path d="M12 35.0137H9H4V8.01273C4 6.90868 4.89543 6.01367 6 6.01367H42C43.1046 6.01367 44 6.90868 44 8.01273V35.0137H36" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 32L14 42H34L24 32Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`, title: "偏好设置", hint: "设置聊天窗口和输出行为的默认偏好" },
-	  appearance: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>外观设置</title><path d="M24 44C29.9601 44 26.3359 35.136 30 31C33.1264 27.4709 44 29.0856 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M28 17C29.6569 17 31 15.6569 31 14C31 12.3431 29.6569 11 28 11C26.3431 11 25 12.3431 25 14C25 15.6569 26.3431 17 28 17Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M16 21C17.6569 21 19 19.6569 19 18C19 16.3431 17.6569 15 16 15C14.3431 15 13 16.3431 13 18C13 19.6569 14.3431 21 16 21Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M17 34C18.6569 34 20 32.6569 20 31C20 29.3431 18.6569 28 17 28C15.3431 28 14 29.3431 14 31C14 32.6569 15.3431 34 17 34Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`, title: "外观设置", hint: "调整窗口布局、界面主题与昔涟桌宠" },
+	  appearance: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>外观设置</title><path d="M24 44C29.9601 44 26.3359 35.136 30 31C33.1264 27.4709 44 29.0856 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M28 17C29.6569 17 31 15.6569 31 14C31 12.3431 29.6569 11 28 11C26.3431 11 25 12.3431 25 14C25 15.6569 26.3431 17 28 17Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M16 21C17.6569 21 19 19.6569 19 18C19 16.3431 17.6569 15 16 15C14.3431 15 13 16.3431 13 18C13 19.6569 14.3431 21 16 21Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M17 34C18.6569 34 20 32.6569 20 31C20 29.3431 18.6569 28 17 28C15.3431 28 14 29.3431 14 31C14 32.6569 15.3431 34 17 34Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`, title: "外观设置", hint: "调整窗口布局、界面主题与蕾米埃尔桌宠" },
 	  general: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>通用设置</title><path d="M18.2838 43.1713C14.9327 42.1736 11.9498 40.3213 9.58787 37.867C10.469 36.8227 11 35.4734 11 34.0001C11 30.6864 8.31371 28.0001 5 28.0001C4.79955 28.0001 4.60139 28.01 4.40599 28.0292C4.13979 26.7277 4 25.3803 4 24.0001C4 21.9095 4.32077 19.8938 4.91579 17.9995C4.94381 17.9999 4.97188 18.0001 5 18.0001C8.31371 18.0001 11 15.3138 11 12.0001C11 11.0488 10.7786 10.1493 10.3846 9.35011C12.6975 7.1995 15.5205 5.59002 18.6521 4.72314C19.6444 6.66819 21.6667 8.00013 24 8.00013C26.3333 8.00013 28.3556 6.66819 29.3479 4.72314C32.4795 5.59002 35.3025 7.1995 37.6154 9.35011C37.2214 10.1493 37 11.0488 37 12.0001C37 15.3138 39.6863 18.0001 43 18.0001C43.0281 18.0001 43.0562 17.9999 43.0842 17.9995C43.6792 19.8938 44 21.9095 44 24.0001C44 25.3803 43.8602 26.7277 43.594 28.0292C43.3986 28.01 43.2005 28.0001 43 28.0001C39.6863 28.0001 37 30.6864 37 34.0001C37 35.4734 37.531 36.8227 38.4121 37.867C36.0502 40.3213 33.0673 42.1736 29.7162 43.1713C28.9428 40.752 26.676 39.0001 24 39.0001C21.324 39.0001 19.0572 40.752 18.2838 43.1713Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`, title: "通用设置", hint: "管理窗口、音频和系统行为" },
 	  api: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>API 设置</title><g clip-path="url(#api-key-nav-clip)"><circle cx="15" cy="33" r="8" fill="none" stroke="currentColor" stroke-width="4"/><path d="M29 16L35.5 22" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 26L37 7" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 11L42 17.5" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g><defs><clipPath id="api-key-nav-clip"><rect width="48" height="48" fill="none"/></clipPath></defs></svg>`, title: "API 设置", hint: "选择预设后只需要填写 API Key。" },
-  cyrene: { emoji: "🌸", title: "昔涟设置", hint: "管理 Agent 行为、记忆、RAG 与权限" },
+  cyrene: { emoji: "🌸", title: "蕾米埃尔设置", hint: "管理 Agent 行为、记忆、RAG 与权限" },
   tts: { emoji: "🎙️", title: "TTS 设置", hint: "语音合成与朗读偏好" },
   asr: { emoji: "🎧", title: "ASR 设置", hint: "语音识别与通话配置" },
 	  tokens: { emoji: `<svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-3px"><title>Token 用量</title><path d="M4 42H44" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="8" y="28" width="6" height="14" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><rect x="21" y="18" width="6" height="24" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><rect x="34" y="6" width="6" height="36" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`, title: "Token 用量", hint: "查看 API 调用统计与消耗" },
@@ -936,11 +943,19 @@ function playSettingsClickSound(): void {
 }
 
 function syncMusicPlayback(): void {
-  bgmAudio.volume = Math.max(0, Math.min(1, Number(musicVolumeInput.value) / 100));
-  if (musicEnabledInput.checked) {
+  const vol = Math.max(0, Math.min(1, Number(musicVolumeInput.value) / 100));
+  const enabled = musicEnabledInput.checked;
+  bgmAudio.volume = vol;
+  if (enabled) {
     void bgmAudio.play().catch(() => {});
   } else {
     bgmAudio.pause();
+  }
+  // 同步到聊天窗口的背景音乐
+  const lm = (window as any).localMusic;
+  if (lm) {
+    lm.setVolume(vol);
+    if (enabled) lm.play(); else lm.pause();
   }
 }
 
@@ -1538,6 +1553,14 @@ async function loadGeneralSettings(): Promise<void> {
     musicEnabledInput.checked = cfg.musicEnabled;
     musicVolumeInput.value = String(cfg.musicVolume);
     syncMusicPlayback();
+    void loadMusicTrackList((cfg as any).musicTrack || "");
+    // 初始化播放模式
+    (window as any).localMusic?.getStatus().then((s: any) => {
+      if (s) {
+        currentLoopMode = s.loopMode || "list";
+        musicLoopLabel.textContent = currentLoopMode === "single" ? "单曲循环" : "列表循环";
+      }
+    });
     soundEnabledInput.checked = cfg.soundEnabled;
     soundVolumeInput.value = String(cfg.soundVolume);
     petAlwaysOnTopInput.checked = cfg.petAlwaysOnTop;
@@ -1642,6 +1665,41 @@ musicEnabledInput.addEventListener("change", () => {
 
 musicVolumeInput.addEventListener("input", () => {
   syncMusicPlayback();
+  setGeneralSaveStatus("有未保存的更改");
+});
+
+async function loadMusicTrackList(currentTrack: string): Promise<void> {
+  try {
+    const lm = (window as any).localMusic;
+    if (!lm) return;
+    const tracks: { file: string; name: string }[] = await lm.listTracks();
+    if (tracks.length === 0) return;
+    musicTrackRow.style.display = "";
+    musicTrackSelect.replaceChildren();
+    for (const t of tracks) {
+      const opt = document.createElement("option");
+      opt.value = t.file;
+      opt.textContent = t.name;
+      if (t.file === currentTrack) opt.selected = true;
+      musicTrackSelect.appendChild(opt);
+    }
+    musicTrackName.textContent = tracks.find((t) => t.file === currentTrack)?.name || currentTrack;
+  } catch (_) {}
+}
+
+musicTrackSelect.addEventListener("change", () => {
+  const file = musicTrackSelect.value;
+  const lm = (window as any).localMusic;
+  if (lm) lm.setTrack(file);
+  musicTrackName.textContent = musicTrackSelect.selectedOptions[0]?.textContent || file;
+  setGeneralSaveStatus("有未保存的更改");
+});
+
+musicLoopToggle.addEventListener("click", () => {
+  currentLoopMode = currentLoopMode === "single" ? "list" : "single";
+  musicLoopLabel.textContent = currentLoopMode === "single" ? "单曲循环" : "列表循环";
+  const lm = (window as any).localMusic;
+  if (lm) lm.setLoopMode(currentLoopMode);
   setGeneralSaveStatus("有未保存的更改");
 });
 
@@ -2525,7 +2583,7 @@ const CUSTOM_ENDPOINT_GUIDE_BODY = [
   '  <p>可接入提供 OpenAI 兼容接口的云端服务、本地推理服务或第三方代理。请自行填写完整 Base URL 和服务实际提供的模型 ID。</p>',
   '  <div class="custom-endpoint-guide-warning"><strong>本地模型与自定义端点不在官方技术支持范围内。</strong>实际能力取决于推理服务的具体实现，系统不会扫描端口、探测模型或自动升级能力档位。接入第三方代理前，请自行评估隐私和数据安全风险。</div>',
   '  <p>建议保存后点击“<strong>测试连接</strong>”进行基础验证。连接成功仅表示服务能够响应，不代表结构化输出、工具调用和思考模式一定可用。</p>',
-  '  <p class="custom-endpoint-guide-security">🔒 你的 API Key 仅存储在本地设备，不会上传至昔涟的服务器。</p>',
+  '  <p class="custom-endpoint-guide-security">🔒 你的 API Key 仅存储在本地设备，不会上传至蕾米埃尔的服务器。</p>',
   '</section>',
   '<section class="custom-endpoint-guide-section custom-endpoint-faq">',
   '  <h4>常见问题</h4>',
@@ -2842,6 +2900,7 @@ generalForm.addEventListener("submit", async (e) => {
     await window.settings!.saveGeneral({
       musicEnabled: musicEnabledInput.checked,
       musicVolume: Number(musicVolumeInput.value),
+      musicTrack: musicTrackSelect.value,
       soundEnabled: soundEnabledInput.checked,
       soundVolume: Number(soundVolumeInput.value),
       sidebarVisible: sidebarVisibleInput.checked,
@@ -4391,7 +4450,7 @@ function renderL2List(query = ""): void {
       meta: `状态：${item.status} · 权重：${item.weight.toFixed(1)} · 创建于：${formatDateTime(item.createdAt)}`,
     })),
     normalized ? "没有匹配的事件记忆" : "暂无事件记忆",
-    normalized ? "换个关键词试试" : "聊天后昔涟会自动提炼重要信息",
+    normalized ? "换个关键词试试" : "聊天后蕾米埃尔会自动提炼重要信息",
   );
 }
 
@@ -4742,10 +4801,10 @@ const permissionBlocksWrap = document.getElementById("plugin-file-permission") a
 const permissionNote = document.getElementById("plugin-file-note") as HTMLElement | null;
 
 const PERMISSION_NOTES: Record<PermissionLevel, string> = {
-  "read-only": "只读：昔涟不会修改本地任何文件，也不能为你安装新工具。",
-  "scoped": "指定目录：昔涟只能在你授权的目录里读写文件（白名单后续在此面板配置）。",
-  "per-action": "每次审批：每次涉及文件或安装的操作，昔涟都会在聊天里弹卡片让你确认。",
-  "full": "完全访问：昔涟可以自由调用本地命令（含 git/npm/pip）。请只在你完全信任的情况下使用。",
+  "read-only": "只读：蕾米埃尔不会修改本地任何文件，也不能为你安装新工具。",
+  "scoped": "指定目录：蕾米埃尔只能在你授权的目录里读写文件（白名单后续在此面板配置）。",
+  "per-action": "每次审批：每次涉及文件或安装的操作，蕾米埃尔都会在聊天里弹卡片让你确认。",
+  "full": "完全访问：蕾米埃尔可以自由调用本地命令（含 git/npm/pip）。请只在你完全信任的情况下使用。",
 };
 
 function paintPermissionUI(level: PermissionLevel): void {
@@ -4774,7 +4833,7 @@ async function confirmFullAccess(): Promise<boolean> {
   const confirmBtn = _cyModalOverlay.querySelector("#cy-modal-confirm") as HTMLButtonElement;
   iconEl.textContent = "⚠️";
   titleEl.textContent = "切换到完全访问？";
-  msgEl.textContent = "这意味着昔涟可以在你的电脑上自由执行命令，包括 git clone、npm install、删除文件等。请只在你完全信任她的判断时启用。";
+  msgEl.textContent = "这意味着蕾米埃尔可以在你的电脑上自由执行命令，包括 git clone、npm install、删除文件等。请只在你完全信任她的判断时启用。";
   cancelBtn.textContent = "再想想";
   _cyModalOverlay.classList.remove("is-hidden");
 
@@ -5671,7 +5730,7 @@ declare global {
   }
 }
 
-const TTS_TEST_TEXT = "你好，我是昔涟，很高兴见到你。";
+const TTS_TEST_TEXT = "你好，我是蕾米埃尔，很高兴见到你。";
 
 // 获取 DOM 元素的辅助函数
 function ttsEl(id: string): HTMLInputElement {
@@ -6000,7 +6059,7 @@ document.getElementById("tts-gptsovits-test")?.addEventListener("click", async (
   }
 });
 
-// 小米 MiMo 选择昔涟克隆参考音频
+// 小米 MiMo 选择蕾米埃尔克隆参考音频
 document.getElementById("tts-mimo-voice-pick")?.addEventListener("click", async () => {
   if (!window.tts) return;
   const filePath = await window.tts.pickAudioFile();
@@ -6047,7 +6106,7 @@ document.getElementById("tts-mimo-test")?.addEventListener("click", async () => 
   const voiceAudioPath = ttsEl("tts-mimo-voice-audio").value.trim();
   const stylePrompt = ttsEl("tts-mimo-style").value.trim();
   if (!apiKey) { window.alert("请先填写小米 MiMo API Key"); return; }
-  if (!voiceAudioPath) { window.alert("请先选择昔涟克隆参考音频"); return; }
+  if (!voiceAudioPath) { window.alert("请先选择蕾米埃尔克隆参考音频"); return; }
 
   const btn = document.getElementById("tts-mimo-test") as HTMLButtonElement;
   btn.disabled = true;

@@ -116,7 +116,7 @@ body {
 }
 
 [data-ui-theme="pearl-white"] .chat__name-avatar {
-  content: url("/icons/cyrene-avatar-line.svg");
+  content: url("/icons/remiel-avatar-line-white.png");
   display: block;
 }
 
@@ -1094,6 +1094,80 @@ body {
 .sticker-picker__item:hover {
   background: var(--rb-border-soft);
   border-color: var(--rb-border-strong);
+}
+
+.sticker-picker__add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rb-text-secondary);
+  border: 1px dashed var(--rb-border-soft);
+}
+.sticker-picker__add:hover {
+  color: var(--rb-text-primary);
+  border-color: var(--rb-border-strong);
+  background: var(--rb-border-soft);
+}
+
+/* 表情包添加表单 */
+.sticker-add-form {
+  padding: 10px;
+  border-top: 1px solid var(--rb-border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sticker-add-form.is-hidden { display: none; }
+.sticker-add-form__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rb-text-secondary);
+  margin-bottom: 2px;
+}
+.sticker-add-form__pick {
+  padding: 4px 8px;
+  font-size: 11px;
+  border: 1px solid var(--rb-border-strong);
+  border-radius: 4px;
+  background: var(--rb-bg-raised);
+  color: var(--rb-text-primary);
+  cursor: pointer;
+}
+.sticker-add-form__filename {
+  font-size: 10px;
+  color: var(--rb-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sticker-add-form input {
+  padding: 4px 6px;
+  font-size: 11px;
+  border: 1px solid var(--rb-border-soft);
+  border-radius: 4px;
+  background: var(--rb-bg-input);
+  color: var(--rb-text-primary);
+  outline: none;
+}
+.sticker-add-form input:focus {
+  border-color: var(--rb-accent);
+}
+.sticker-add-form__actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+.sticker-add-form__actions button {
+  padding: 3px 10px;
+  font-size: 11px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.sticker-add-form__actions .btn-primary {
+  background: var(--rb-accent);
+  color: #fff;
+  border: none;
 }
 
 .sticker-picker__item img {

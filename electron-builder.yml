@@ -1,5 +1,5 @@
 appId: com.cyrene.live2d
-productName: Cyrene
+productName: 蕾米埃尔
 directories:
   output: release
 asar: true

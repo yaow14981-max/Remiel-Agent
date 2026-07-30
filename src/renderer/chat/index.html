@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>昔涟 · 聊天</title>
+  <title>蕾米埃尔 · 聊天</title>
   <link rel="stylesheet" href="../ui/tokens.css" />
   <link rel="stylesheet" href="../ui/fonts.css" />
   <link rel="stylesheet" href="../ui/base.css" />
@@ -46,8 +46,8 @@
               </div>
             </button>
             <span class="chat__title-meta">
-              <img class="chat__name-avatar" src="../icons/cyrene-avatar-line-white.png" alt="" aria-hidden="true" width="20" height="20" />
-              <span class="chat__name">昔涟</span>
+              <img class="chat__name-avatar" src="../icons/remiel-avatar-line-white.png" alt="" aria-hidden="true" width="20" height="20" />
+              <span class="chat__name">蕾米埃尔</span>
               <span class="chat__name-sep" aria-hidden="true">·</span>
               <span class="chat__hint" id="chat-hint">模型未连接</span>
             </span>
@@ -99,7 +99,7 @@
         <main class="chat__messages" id="messages" aria-live="polite"></main>
         <div class="chat__empty-state" id="chat-empty" hidden>
           <div class="chat__empty-icon"><svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M33 38H22V30H36V22H44V38H39L36 41L33 38Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 6H36V30H17L13 34L9 30H4V6Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 18H20" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M26 18H27" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M12 18H13" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></div>
-          <p class="chat__empty-text">昔涟期待与你聊天哦 ✨</p>
+          <p class="chat__empty-text">蕾米埃尔期待与你聊天哦 ✨</p>
           <div class="chat__quick-presets" id="quick-presets"></div>
         </div>
       </div>
@@ -127,6 +127,18 @@
     </form>
     <div class="sticker-picker" id="sticker-picker" hidden>
       <div class="sticker-picker__grid" id="sticker-picker-grid"></div>
+      <div class="sticker-add-form is-hidden" id="sticker-add-form">
+        <div class="sticker-add-form__title">添加表情包</div>
+        <button type="button" class="sticker-add-form__pick" id="sticker-add-pick">选择图片文件</button>
+        <span class="sticker-add-form__filename" id="sticker-add-filename"></span>
+        <input type="text" id="sticker-add-name" placeholder="英文ID，如 my_sticker" autocomplete="off" />
+        <input type="text" id="sticker-add-desc" placeholder="描述，如：蕾米埃尔画画" autocomplete="off" />
+        <input type="text" id="sticker-add-keys" placeholder="触发词，逗号分隔，如：画画,创作" autocomplete="off" />
+        <div class="sticker-add-form__actions">
+          <button type="button" id="sticker-add-cancel">取消</button>
+          <button type="button" class="btn-primary" id="sticker-add-ok">确认添加</button>
+        </div>
+      </div>
     </div>
   </div>
   <script type="module" src="./main.ts"></script>

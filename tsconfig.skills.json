@@ -13,6 +13,5 @@
     "declaration": false,
     "sourceMap": true
   },
-  "include": ["skills/cyrene-music-companion/*.ts"],
-  "exclude": ["skills/cyrene-music-companion/tests"]
+  "include": ["skills/_placeholder.ts"]
 }

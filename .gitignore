@@ -1,5 +1,15 @@
 ﻿node_modules/
 
+# 蕾米桌宠（第三方独立应用，120MB）和禁用技能备份
+remiel-pet/
+disabled_skills/
+
+# Launch scripts (user-local, not portable)
+launch.bat
+蕾米埃尔.lnk
+mk_shortcut.ps1
+create_shortcut.ps1
+
 # Build outputs (Electron + Vite + tsc)
 dist/main/
 dist/preload/

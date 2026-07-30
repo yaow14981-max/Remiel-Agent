@@ -1,8 +1,8 @@
 // 通话窗口渲染端 —— 粒子背景 + 麦克风采集 + VAD 静默检测 + 状态机 + TTS 播放。
 //
-// 状态：LISTENING（用户说话）→ THINKING（agent 思考）→ SPEAKING（昔涟说话）→ LISTENING
+// 状态：LISTENING（用户说话）→ THINKING（agent 思考）→ SPEAKING（蕾米埃尔说话）→ LISTENING
 // 用户说话时：柱状胶囊波形跳动 + 头像外圈音量波形
-// 昔涟说话时：电波环脉冲扩散 + 波形隐藏
+// 蕾米埃尔说话时：电波环脉冲扩散 + 波形隐藏
 import "../ui/theme";
 
 // ── 粒子背景 ──
@@ -143,7 +143,7 @@ function updateUI(): void {
     waveformMode = "listening";
     micMode = "listening";
   } else if (currentState === "THINKING") {
-    status.textContent = "昔涟思考中...";
+    status.textContent = "蕾米埃尔思考中...";
     status.className = "call__status call__status--thinking";
     ring.classList.remove("is-active");
     wave?.classList.add("is-active");
@@ -151,7 +151,7 @@ function updateUI(): void {
     waveformMode = "thinking";
     micMode = "thinking";
   } else if (currentState === "SPEAKING") {
-    status.textContent = "昔涟说话中...";
+    status.textContent = "蕾米埃尔说话中...";
     status.className = "call__status";
     ring.classList.add("is-active");
     wave?.classList.remove("is-active");

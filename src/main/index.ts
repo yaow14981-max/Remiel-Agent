@@ -145,6 +145,7 @@ import { registerEmailTools, setEmailConfig } from "./orchestrator/email-tools";
 import { resolveMusicPaths } from "./music/paths";
 import { bootstrapMusicService } from "./music/bootstrap";
 import { installShutdownLatch } from "./music/shutdown-latch";
+import { registerLocalMusicIpc, autoPlayMusic, toggleMute as toggleMusicMute, isMusicMuted, getMusicState, setMusicChatWindow } from "./local-music";
 import {
   buildConversationTimeContext,
   normalizeChatMessagesWithTime,
@@ -229,6 +230,7 @@ let screenshotService: ScreenshotService | null = null;
 let proactiveChatService: ProactiveChatService | null = null;
 let normalConversationBusyCount = 0;
 let proactiveScreenLocked = false;
+let remielPetProcess: ReturnType<typeof spawn> | null = null;
 const live2dWindowLifecycle = createWindowLifecycleTracker<BrowserWindow>("live2d-main", {
   onClosed: () => { /* no-op：原 setLive2dWindow 已随 opener 子系统一起移除 */ },
 });
@@ -623,6 +625,7 @@ interface GeneralSettings {
   chatSocialContextEnabled: boolean;
   musicEnabled: boolean;
   musicVolume: number;
+  musicTrack?: string;
   soundEnabled: boolean;
   soundVolume: number;
   petAlwaysOnTop: boolean;
@@ -767,7 +770,7 @@ const STARTUP_EMBEDDING_REFRESH_DELAY_MS = 1500;
 
 function getAppIconPath(icon: UiIcon): string {
   const preset = UI_ICON_PRESETS.find((item) => item.id === icon);
-  return path.join(__dirname, "..", "..", "..", "assets", "icon-presets", preset?.fileName ?? "cyrene-sun.png");
+  return path.join(__dirname, "..", "..", "..", "assets", "icon-presets", preset?.fileName ?? "remiel-sun.png");
 }
 
 function getCurrentAppIconPath(): string {
@@ -868,8 +871,9 @@ const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   citaEnabled: false,
   citaSemanticEngine: "remote",
   chatSocialContextEnabled: false,
-  musicEnabled: false,
+  musicEnabled: true,
   musicVolume: 60,
+  musicTrack: "",
   soundEnabled: true,
   soundVolume: 70,
   petAlwaysOnTop: true,
@@ -881,7 +885,7 @@ const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   language: "zh-CN",
   uiTheme: "classic",
   uiFont: DEFAULT_UI_FONT,
-  uiIcon: "cyrene-sun",
+  uiIcon: "remiel-sun",
   defaultChatMode: "work",
   currentStyleId: "default",
   customStyle: DEFAULT_CUSTOM_STYLE,
@@ -2367,7 +2371,7 @@ async function commitLocalProactiveMessage(input: ProactiveCommitInput): Promise
   if (!initialDecision.allowed) return { kind: "cancelled", reason: initialDecision.reason };
 
   const session = chatsStore.getOrCreateSessionByPurpose("proactive-chat", {
-    title: "昔涟的主动消息",
+    title: "蕾米埃尔的主动消息",
     identityId: null,
   });
   const at = Date.now();
@@ -2688,6 +2692,43 @@ function attachExternalLinkHandler(win: BrowserWindow): void {
     }
   });
 }
+
+function launchRemielPet(): void {
+  if (remielPetProcess) return;
+
+  const petDir = path.join(__dirname, "..", "..", "..", "remiel-pet", "蕾米桌宠");
+  const petExe = path.join(petDir, "小蕾米.exe");
+
+  if (!fs.existsSync(petExe)) {
+    console.log("[RemielPet] 未找到桌宠程序：", petExe);
+    return;
+  }
+
+  try {
+    remielPetProcess = spawn(petExe, [], {
+      cwd: petDir,
+      detached: false,
+      stdio: "ignore",
+      windowsHide: false,
+    });
+
+    remielPetProcess.on("error", (err) => {
+      console.warn("[RemielPet] 启动失败:", err.message);
+      remielPetProcess = null;
+    });
+
+    remielPetProcess.on("exit", (code) => {
+      console.log("[RemielPet] 已退出, code:", code);
+      remielPetProcess = null;
+    });
+
+    console.log("[RemielPet] 已启动, PID:", remielPetProcess.pid);
+  } catch (err: any) {
+    console.warn("[RemielPet] 启动异常:", err?.message ?? err);
+    remielPetProcess = null;
+  }
+}
+
 function createWindow(): void {
   const settings = loadGeneralSettings();
   let restoreX: number | undefined;
@@ -2951,7 +2992,7 @@ function createChatWindow(sessionId?: string): void {
     height: 760,
     minWidth: 960,
     minHeight: 540,
-    title: "Cyrene · 聊天",
+    title: "蕾米埃尔 · 聊天",
     icon: getCurrentAppIconPath(),
     backgroundColor: "#00000000",
     autoHideMenuBar: true,
@@ -3010,7 +3051,7 @@ function createSidebarWindow(): void {
     height: 760,
     minWidth: 56,
     minHeight: 540,
-    title: "昔涟 · 状态",
+    title: "蕾米埃尔 · 状态",
     icon: getCurrentAppIconPath(),
     backgroundColor: "#00000000",
     autoHideMenuBar: true,
@@ -3057,7 +3098,7 @@ function createTasksWindow(): void {
     width: 320,
     height: 760,
     minHeight: 540,
-    title: "昔涟 · 今日日程",
+    title: "蕾米埃尔 · 日程",
     icon: getCurrentAppIconPath(),
     backgroundColor: "#00000000",
     autoHideMenuBar: true,
@@ -3112,7 +3153,7 @@ function createSettingsWindow(section?: string): void {
     height,
     minWidth: 920,
     minHeight: 580,
-    title: "昔涟 · 设置",
+    title: "蕾米埃尔 · 设置",
     icon: getCurrentAppIconPath(),
     backgroundColor: "#00000000",
     autoHideMenuBar: true,
@@ -3238,7 +3279,7 @@ function createCallWindow(): void {
     height: CALL_H,
     minWidth: 420,
     minHeight: 600,
-    title: "Cyrene · 语音通话",
+    title: "蕾米埃尔 · 通话",
     icon: getCurrentAppIconPath(),
     backgroundColor: "#00000000",
     autoHideMenuBar: true,
@@ -3297,12 +3338,17 @@ function createTray(): void {
     },
     { type: "separator" },
     {
+      label: "切换静音",
+      click: () => { toggleMusicMute(); },
+    },
+    { type: "separator" },
+    {
       label: "退出",
       click: () => { app.quit(); },
     },
   ]);
 
-  tray.setToolTip("Cyrene");
+  tray.setToolTip("蕾米埃尔");
   tray.setContextMenu(contextMenu);
 }
 
@@ -5193,6 +5239,7 @@ app.whenReady().then(async () => {
   const generalSettings = loadGeneralSettings();
   createWindow();
   createChatWindow();
+  setMusicChatWindow(chatWindow);
   if (generalSettings.sidebarVisible) createSidebarWindow();
   if (generalSettings.tasksVisible) createTasksWindow();
   createTray();
@@ -5201,6 +5248,7 @@ app.whenReady().then(async () => {
   registerPermissionIpc();
   registerChoiceIpc();
   registerCallIpc();
+  registerLocalMusicIpc();
   console.log("[Cyrene] 当前 agent 权限档位:", getCurrentLevel());
   try {
     const modelSettings = loadModelSettings();
@@ -5222,12 +5270,22 @@ app.whenReady().then(async () => {
   scheduleStartupEmbeddingRefreshes();
 
   schedulerEngine.start();
+
+  // 启动蕾米桌宠
+  launchRemielPet();
+
+  // 自动播放默认音乐
+  autoPlayMusic();
 });
 
 app.on("window-all-closed", () => {});
 
 // 应用退出前把 token 用量缓存落盘（防抖未触发的最后一次写）
 app.on("before-quit", () => {
+  if (remielPetProcess) {
+    try { remielPetProcess.kill(); } catch (_) { /* ignore */ }
+    remielPetProcess = null;
+  }
   petWindowMoveController.dispose();
   schedulerEngine?.stop();
   stopProactiveTrigger();
