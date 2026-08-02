@@ -47,7 +47,7 @@
 ### 待完成
 
 - [ ] GPT-SoVITS 语音克隆（已有参考音频 `assets/voice/remiel_ref.m4a`）
-- [ ] Live2D 模型替换
+- [ ] Live2D 模型替换（后续有机会实现）
 - [ ] 更多语音素材
 - [ ] 更多 ZZZ 角色 Worldbook 词条
 
