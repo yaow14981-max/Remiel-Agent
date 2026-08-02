@@ -448,19 +448,19 @@
           <div class="appearance-section">
             <div class="appearance-section__heading">
               <h2>蕾米埃尔桌宠</h2>
-              <p>以下设置为原版 Live2D 桌宠的控制项，<strong>对当前蕾米埃尔桌宠（独立程序）不生效</strong>。蕾米桌宠随应用自动启动和退出，如需调整请直接操作桌宠窗口。</p>
+              <p>控制 GIF 桌宠的置顶、显示和大小。桌宠随应用自动启动，默认显示，可通过右键菜单关闭。</p>
             </div>
             <div class="settings-list">
               <label class="setting-row">
-                <div><strong>桌宠置顶</strong><span>只让桌宠保持最上层，聊天和侧边窗口不置顶。</span></div>
+                <div><strong>桌宠置顶</strong><span>桌宠窗口始终保持在最上层。</span></div>
                 <span class="switch"><input id="pet-always-on-top" type="checkbox" /><span class="switch__track"><span class="switch__thumb"></span></span></span>
               </label>
               <label class="setting-row">
-                <div><strong>桌宠显示</strong><span>隐藏或显示 Live2D 桌宠本体。</span></div>
+                <div><strong>桌宠显示</strong><span>隐藏或显示桌宠窗口。</span></div>
                 <span class="switch"><input id="pet-visible" type="checkbox" /><span class="switch__track"><span class="switch__thumb"></span></span></span>
               </label>
               <label class="setting-row">
-                <div><strong>桌宠缩放</strong><span>调整 Live2D 模型大小（0.5× ~ 2.0×），窗口与模型同步缩放。</span></div>
+                <div><strong>桌宠缩放</strong><span>调整桌宠大小（0.5× ~ 2.0×），窗口与内容同步缩放。</span></div>
                 <div class="range-row">
                   <input id="pet-zoom" type="range" min="0.5" max="2" step="0.1" />
                   <span id="pet-zoom-val" class="range-val">100%</span>
@@ -1496,7 +1496,7 @@
             <article class="disclaimer-section">
               <h2>5. 版权方联络通道</h2>
               <p>若米哈游 / HoYoverse 权利方认为本软件存在侵犯权益的情形，请通过以下方式联系，承诺在收到通知后 7 个工作日内积极配合处理或下架。</p>
-              <p>桌宠素材来源于 B站 UP 主 <strong>ZanyZebra</strong>，如有侵权请联系删除。</p>
+              <p>GIF 桌宠素材为自制，Live2D 桌宠素材来源于 B站 UP 主 <strong>ZanyZebra</strong>，如有侵权请联系删除。</p>
               <ul>
                 <li><svg width="16" height="16" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="vertical-align:-2px"><title>电子邮箱</title><path d="M44 24V9H24H4V24V39H24" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 39L43 32L39 28L31 35V39H35Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 9L24 24L44 9" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg> 联系邮箱：2963378258@qq.com（邮件标题请注明【版权事宜】）</li>
                 <li><svg fill="currentColor" fill-rule="evenodd" height="1em" width="1em" viewBox="0 0 24 24" style="flex:none;line-height:1;vertical-align:-2px" aria-hidden="true"><title>Github</title><path d="M12 0c6.63 0 12 5.276 12 11.79-.001 5.067-3.29 9.567-8.175 11.187-.6.118-.825-.25-.825-.56 0-.398.015-1.665.015-3.242 0-1.105-.375-1.813-.81-2.181 2.67-.295 5.475-1.297 5.475-5.822 0-1.297-.465-2.344-1.23-3.169.12-.295.54-1.503-.12-3.125 0 0-1.005-.324-3.3 1.209a11.32 11.32 0 00-3-.398c-1.02 0-2.04.133-3 .398-2.295-1.518-3.3-1.209-3.3-1.209-.66 1.622-.24 2.83-.12 3.125-.765.825-1.23 1.887-1.23 3.169 0 4.51 2.79 5.527 5.46 5.822-.345.294-.66.81-.765 1.577-.69.31-2.415.81-3.495-.973-.225-.354-.9-1.223-1.845-1.209-1.005.015-.405.56.015.781.51.28 1.095 1.327 1.23 1.666.24.663 1.02 1.93 4.035 1.385 0 .988.015 1.916.015 2.196 0 .31-.225.664-.825.56C3.303 21.374-.003 16.867 0 11.791 0 5.276 5.37 0 12 0z"></path></svg> 原作者项目：<a href="https://github.com/Playa-0v0/Cyrene-Agent" target="_blank" rel="noopener noreferrer">Playa-0v0/Cyrene-Agent</a></li>
@@ -1666,6 +1666,11 @@
                   <span class="tts-engine__name">自定义云端</span>
                   <span class="tts-engine__tag">接口</span>
                 </button>
+                <button type="button" class="tts-engine" data-engine="edge" role="radio" aria-checked="false">
+                  <span class="tts-engine__icon"><svg width="24" height="24" viewBox="0 0 48 48" fill="none" aria-hidden="true"><title>Edge TTS</title><path d="M24 6V42C17 42 11.7985 32.8391 11.7985 32.8391H6C4.89543 32.8391 4 31.9437 4 30.8391V17.0108C4 15.9062 4.89543 15.0108 6 15.0108H11.7985C11.7985 15.0108 17 6 24 6Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M32 15L32 15C32.6232 15.5565 33.1881 16.1797 33.6841 16.8588C35.1387 18.8504 36 21.3223 36 24C36 26.6545 35.1535 29.1067 33.7218 31.0893C33.2168 31.7885 32.6391 32.4293 32 33" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <span class="tts-engine__name">Edge TTS</span>
+                  <span class="tts-engine__tag">免费</span>
+                </button>
               </div>
             </div>
 
@@ -1800,6 +1805,27 @@
               </div>
             </div>
 
+            <div class="tts-config" id="tts-config-edge" hidden>
+              <h2 class="tts-section__title">🔊 Edge TTS 配置（微软免费）</h2>
+              <div class="tts-field">
+                <label>语音音色</label>
+                <select id="tts-edge-voice">
+                  <option value="zh-CN-XiaoxiaoNeural">晓晓（温柔女声）</option>
+                  <option value="zh-CN-XiaoyiNeural">晓伊（甜美女声）</option>
+                  <option value="zh-CN-YunxiNeural">云希（清朗男声）</option>
+                  <option value="zh-CN-YunyangNeural">云扬（阳光男声）</option>
+                  <option value="zh-CN-YunjianNeural">云健（稳重男声）</option>
+                </select>
+              </div>
+              <div class="tts-field">
+                <label>语速</label>
+                <input type="range" id="tts-edge-speed" min="0.5" max="2" step="0.1" value="1" />
+                <span id="tts-edge-speed-val" style="margin-left:8px;font-size:13px">1.0x</span>
+              </div>
+              <button type="button" class="ghost-btn" id="tts-edge-test"><svg width="14" height="14" viewBox="0 0 48 48" fill="none" aria-hidden="true"><title>测试发音</title><path d="M24 6V42C17 42 11.7985 32.8391 11.7985 32.8391H6C4.89543 32.8391 4 31.9437 4 30.8391V17.0108C4 15.9062 4.89543 15.0108 6 15.0108H11.7985C11.7985 15.0108 17 6 24 6Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M32 15L32 15C32.6232 15.5565 33.1881 16.1797 33.6841 16.8588C35.1387 18.8504 36 21.3223 36 24C36 26.6545 35.1535 29.1067 33.7218 31.0893C33.2168 31.7885 32.6391 32.4293 32 33" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg> 测试发音</button>
+              <div class="tts-clone-status" id="tts-edge-test-status"></div>
+            </div>
+
             <div class="tts-config" id="tts-config-mimo" hidden>
               <h2 class="tts-section__title"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><title>小米MiMo</title><path d="M.958 15.936a.459.459 0 01.459.44v2.729a.46.46 0 01-.918 0v-2.729a.459.459 0 01.459-.44zm4.814-2.035a.46.46 0 01.553.45v4.754a.458.458 0 11-.918 0V15.48L3.74 17.202a.462.462 0 01-.655.016.462.462 0 01-.065-.082L.628 14.67a.459.459 0 01.658-.637l2.124 2.187 2.127-2.188a.46.46 0 01.235-.13zm2.068.004a.46.46 0 01.458.445v4.755a.46.46 0 01-.458.458.459.459 0 01-.458-.458V14.35a.459.459 0 01.458-.445zm1.973 2.014a.46.46 0 01.46.457v2.729a.46.46 0 01-.784.324.46.46 0 01-.134-.324v-2.729a.46.46 0 01.458-.458zm.002-2.045a.458.458 0 01.328.157l2.127 2.19 2.125-2.19a.459.459 0 01.784.318v4.756a.46.46 0 01-.455.458.46.46 0 01-.458-.458V15.48l-1.667 1.723a.46.46 0 01-.65.008l-.005-.005c0-.002-.002-.002-.004-.003l-2.455-2.534a.46.46 0 01-.008-.667.461.461 0 01.338-.128zm6.797 1.206a.46.46 0 01.53.651A1.966 1.966 0 0019.81 18.4a.462.462 0 01.623.18.46.46 0 01-.181.624 2.863 2.863 0 01-1.38.353l-.142-.004a2.88 2.88 0 01-2.393-4.263.461.461 0 01.274-.21zm.864-.931a2.884 2.884 0 013.915 3.914.46.46 0 01-.402.24l-.057-.004a.458.458 0 01-.164-.055.46.46 0 01-.182-.622 1.967 1.967 0 00-2.669-2.67.459.459 0 11-.441-.803zM9.59 6.368c1.481 0 1.696 1.202 1.696 1.654v2.648h-.917v-.432c-.26.346-.792.535-1.36.535-.133 0-1.289-.03-1.384-1.136-.082-.932.675-1.61 2.053-1.61h.691c0-.563-.367-.886-.983-.886-.44.013-.864.174-1.2.458l-.36-.664c.484-.379 1.012-.567 1.764-.567zm4.427.1c1.263 0 2.082.97 2.083 2.15 0 1.181-.824 2.154-2.083 2.154-1.26 0-2.084-.972-2.084-2.152 0-1.18.82-2.153 2.084-2.153zm6.801.015c.68 0 1.202.465 1.197 1.548v2.642H21.1V8.29c0-.312-.002-.98-.63-.98s-.628.667-.628.838v2.524h-.89V8.148c0-.17-.001-.838-.63-.838-.628 0-.628.668-.628.98v2.383h-.917v-4.03h.917V7a1.22 1.22 0 01.947-.516c.398 0 .76.193.982.686a1.321 1.321 0 011.195-.686zm-18.093.872l1.457-1.772H5.32L3.311 8.07l2.14 2.602H4.24L2.725 8.796 1.21 10.672H0L2.138 8.07.13 5.583h1.138l1.458 1.772zm4.149 3.317h-.916V6.644h.916v4.028zm16.99 0h-.916V6.644h.916v4.028zM9.925 8.71c-1.055 0-1.359.412-1.326.742.032.329.324.537.757.537a1.013 1.013 0 001.014-.968l.002-.31h-.447zM14.018 7.3c-.663 0-1.184.487-1.184 1.32 0 .832.52 1.32 1.184 1.32.662 0 1.182-.49 1.182-1.32 0-.832-.52-1.32-1.182-1.32zM6.417 5.001a.568.568 0 01.587.582.588.588 0 01-1.175 0A.57.57 0 016.417 5zm16.991 0a.57.57 0 01.592.582.588.588 0 01-1.174 0 .57.57 0 01.357-.542.572.572 0 01.225-.04z"></path></svg> 小米 MiMo 配置</h2>
               <div class="tts-field">
@@ -1930,7 +1956,7 @@
                 <select id="asr-engine">
                   <option value="off">关闭</option>
                   <option value="aliyun">阿里云（实时语音识别）</option>
-                  <option value="local">本地（占位，敬请期待）</option>
+                  <option value="local">本地（Vosk 离线识别，需下载模型）</option>
                 </select>
               </div>
               <p class="tts-hint">选择「阿里云」后填入下方配置。</p>
@@ -1958,6 +1984,15 @@
                 </select>
               </div>
               <p class="tts-hint">阿里云 → 智能语音交互控制台 → 创建项目获取 AppKey。AccessKey 在 RAM 访问控制台获取（ram.console.aliyun.com/manage/ak）。Token 会自动获取，无需手动填写。</p>
+            </div>
+
+            <!-- Vosk 本地 ASR 配置 -->
+            <div id="asr-vosk-config" style="display:none">
+              <div class="tts-field">
+                <label for="asr-vosk-model-path">Vosk 模型目录</label>
+                <input type="text" id="asr-vosk-model-path" placeholder="D:/vosk-model-cn-0.22" />
+              </div>
+              <p class="tts-hint">下载中文模型（约 1.4GB）：<a href="https://alphacephei.com/vosk/models" target="_blank" rel="noopener noreferrer">https://alphacephei.com/vosk/models</a> → 下载 vosk-model-cn-0.22.zip → 解压 → 把目录路径填到这里。首次使用时 Vosk 会自动初始化。</p>
             </div>
 
             <div class="tts-section">

@@ -555,20 +555,22 @@ export async function buildAgentRunOptions(
     + (autoInjectedSkillContext ? "\n\n---\n\n" + autoInjectedSkillContext : "")
     + (citaContextBlock ? "\n\n" + citaContextBlock : "");
 
-  // Soul 阶段基础 system：人设 + 环境/记忆/关系/附件/渠道（这些是"表达"所需）。
+  // Soul 阶段基础 system：静态人设在前（可缓存），环境/记忆/关系等动态内容在后。
   // FC 循环在 Soul 阶段追加通用 ToolExecutionContext，并保留 role:tool 协议消息。
   const soulSystemWithoutCita =
-    (environmentContext ? environmentContext + "\n\n" : "") +
-    (conversationTimeContext ? conversationTimeContext + "\n\n---\n\n" : "") +
-    (channelSystem ? channelSystem + "\n\n" : "") +
+    // ── 静态层（可被 prompt cache 命中）──
     deps.buildSoulSystemBasePrompt(basePromptMode) +
-    (chatSocialContextBlock ? "\n\n---\n\n" + chatSocialContextBlock : "") +
+    (channelSystem ? "\n\n---\n\n" + channelSystem : "") +
     (stylePromptBlock ? "\n\n---\n\n" + stylePromptBlock : "") +
+    toneInjection +
+    // ── 动态层（每次请求变化）──
+    (environmentContext ? "\n\n---\n\n" + environmentContext : "") +
+    (conversationTimeContext ? "\n\n---\n\n" + conversationTimeContext : "") +
+    (chatSocialContextBlock ? "\n\n---\n\n" + chatSocialContextBlock : "") +
     (autoInjectedSoulContext ? "\n\n---\n\n" + autoInjectedSoulContext : "") +
     skillActivation +
-    toneInjection +
-    (alwaysOnContext ? "\n\n" + alwaysOnContext + "\n\n" : "") +
-    (relationshipContext ? "\n\n" + relationshipContext + "\n\n" : "") +
+    (alwaysOnContext ? "\n\n---\n\n" + alwaysOnContext : "") +
+    (relationshipContext ? "\n\n---\n\n" + relationshipContext : "") +
     attachmentContext;
   const soulSystemBaseContent = soulSystemWithoutCita;
 

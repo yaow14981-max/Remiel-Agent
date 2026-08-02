@@ -556,6 +556,10 @@ const ttsApi = {
   cloneMossland: (payload: {
     apiKey: string; filePath: string; name?: string; description?: string;
   }) => ipcRenderer.invoke(IPC.TTS_CLONE_MOSSLAND, payload),
+  // Edge TTS（微软免费）
+  synthesizeEdge: (payload: {
+    text: string; voice?: string; speed?: number; pitch?: string;
+  }) => ipcRenderer.invoke(IPC.TTS_SYNTHESIZE_EDGE, payload),
   // Mossland 拉取账号下音色列表（GET /v1/audio/voices）
   listMosslandVoices: (payload: {
     apiKey: string; limit?: number;

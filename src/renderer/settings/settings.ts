@@ -2215,10 +2215,16 @@ const asrVadSilenceInput = document.getElementById("asr-vad-silence") as HTMLInp
 const asrVadThresholdInput = document.getElementById("asr-vad-threshold") as HTMLInputElement | null;
 const asrVadThresholdValue = document.getElementById("asr-vad-threshold-value");
 const asrShowTranscriptCheckbox = document.getElementById("asr-show-transcript") as HTMLInputElement | null;
+const asrVoskConfig = document.getElementById("asr-vosk-config");
+const asrVoskModelPathInput = document.getElementById("asr-vosk-model-path") as HTMLInputElement | null;
 
 function syncAsrVisibility(): void {
+  const engine = asrEngineSelect?.value ?? "off";
   if (asrAliyunConfig) {
-    (asrAliyunConfig as HTMLElement).style.display = asrEngineSelect?.value === "aliyun" ? "block" : "none";
+    (asrAliyunConfig as HTMLElement).style.display = engine === "aliyun" ? "block" : "none";
+  }
+  if (asrVoskConfig) {
+    asrVoskConfig.style.display = engine === "local" ? "block" : "none";
   }
 }
 
@@ -2244,6 +2250,8 @@ asrVadThresholdInput?.addEventListener("input", () => {
   void saveAsrField("asrVadThreshold", v);
 });
 asrShowTranscriptCheckbox?.addEventListener("change", () => void saveAsrField("asrShowTranscript", asrShowTranscriptCheckbox.checked));
+let asrVoskModelPathTimer: ReturnType<typeof setTimeout> | undefined;
+asrVoskModelPathInput?.addEventListener("input", () => { clearTimeout(asrVoskModelPathTimer); asrVoskModelPathTimer = setTimeout(() => void saveAsrField("asrVoskModelPath", asrVoskModelPathInput.value.trim()), 800); });
 
 async function saveAsrField(field: string, value: unknown): Promise<void> {
   if (!window.tts) return;
@@ -2270,6 +2278,7 @@ async function loadAsrConfig(): Promise<void> {
         if (asrVadThresholdValue) asrVadThresholdValue.textContent = String(v);
       }
       if (asrShowTranscriptCheckbox) asrShowTranscriptCheckbox.checked = Boolean(cfg.asrShowTranscript);
+      if (asrVoskModelPathInput) asrVoskModelPathInput.value = String(cfg.asrVoskModelPath ?? "");
     }
     syncAsrVisibility();
   } catch (err) {
@@ -5713,6 +5722,10 @@ interface TtsApi {
     format?: "mp3" | "wav" | "pcm";
     expectedCacheKey?: string;
   }) => Promise<{ base64: string; cacheKey: string; cached: boolean; format: "mp3" | "wav" | "pcm" }>;
+  // Edge TTS（微软免费）
+  synthesizeEdge: (payload: {
+    text: string; voice?: string; speed?: number; pitch?: string;
+  }) => Promise<{ base64: string; cacheKey: string; cached: boolean; format: string }>;
   cloneMossland: (payload: {
     apiKey: string; filePath: string; name?: string; description?: string;
   }) => Promise<{ voiceId: string; name?: string; createdAt?: number }>;
@@ -6122,6 +6135,34 @@ document.getElementById("tts-mimo-test")?.addEventListener("click", async () => 
     btn.disabled = false;
     btn.textContent = "🔊 测试发音";
   }
+});
+
+// ── Edge TTS ──
+document.getElementById("tts-edge-test")?.addEventListener("click", async () => {
+  if (!window.tts) return;
+  const voice = (document.getElementById("tts-edge-voice") as HTMLSelectElement).value;
+  const speed = Number((document.getElementById("tts-edge-speed") as HTMLInputElement).value);
+  const btn = document.getElementById("tts-edge-test") as HTMLButtonElement;
+  btn.disabled = true;
+  btn.textContent = "合成中…";
+  const statusEl = document.getElementById("tts-edge-test-status");
+  if (statusEl) { statusEl.textContent = "连接 Edge TTS…"; statusEl.className = "tts-clone-status is-loading"; }
+  try {
+    const result = await window.tts.synthesizeEdge({ text: TTS_TEST_TEXT, voice, speed });
+    playTtsAudio(result.base64, result.format as "mp3" | "wav");
+    if (statusEl) { statusEl.textContent = "播放成功"; statusEl.className = "tts-clone-status is-ok"; }
+  } catch (err) {
+    if (statusEl) { statusEl.textContent = "失败: " + (err instanceof Error ? err.message : String(err)); statusEl.className = "tts-clone-status is-error"; }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "🔊 测试发音";
+  }
+});
+
+// Edge TTS 语速滑块
+document.getElementById("tts-edge-speed")?.addEventListener("input", function(this: HTMLInputElement) {
+  const val = document.getElementById("tts-edge-speed-val");
+  if (val) val.textContent = Number(this.value).toFixed(1) + "x";
 });
 
 // ── Mossland ──

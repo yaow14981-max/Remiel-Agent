@@ -217,6 +217,7 @@ export const IPC = {
   TTS_SYNTHESIZE_MIMO: "tts:synthesize-mimo",             // 小米 MiMo TTS 合成 → base64
   TTS_SYNTHESIZE_CACHED_MIMO: "tts:synthesize-cached-mimo", // 小米 MiMo TTS 合成 + 本地缓存
   TTS_SYNTHESIZE_MOSSLAND: "tts:synthesize-mossland",       // Mossland (api.mosi.cn) 合成 → base64
+  TTS_SYNTHESIZE_EDGE: "tts:synthesize-edge",               // Edge TTS (微软免费) 合成 → base64
   TTS_SYNTHESIZE_CACHED_MOSSLAND: "tts:synthesize-cached-mossland", // Mossland 合成 + 本地缓存
   TTS_CLONE_MOSSLAND: "tts:clone-mossland",           // Mossland 克隆音色（multipart 上传）
   TTS_LIST_MOSSLAND_VOICES: "tts:list-mossland-voices", // Mossland 拉取账号下音色列表
@@ -299,6 +300,10 @@ export const IPC = {
   MUSIC_LOCAL_LIST_TRACKS: "music:local-list-tracks",
   MUSIC_LOCAL_SET_LOOP_MODE: "music:local-set-loop-mode",
   MUSIC_LOCAL_NEXT_TRACK: "music:local-next-track",
+
+  // GIF pet window
+  GIF_PET_MOVE: "gif-pet:move",
+  GIF_PET_CONTEXT_MENU: "gif-pet:context-menu",
 
   // screenshot
   SCREENSHOT_START: "screenshot:start",

@@ -66,6 +66,7 @@ export async function runChatLoop(options: ChatLoopOptions): Promise<TwoPhaseFcR
       model: options.settings.model,
       messages: withSoulSystem(messages, options.soulSystemBaseContent),
       stream: false,
+      maxTokens: 1024, // chat mode: prevent excessive generation for simple conversation
       ...(options.soulSampling ?? {}),
     };
     const effectiveRequest = options.adapter.applyCacheHints?.(request, options.settings) ?? request;

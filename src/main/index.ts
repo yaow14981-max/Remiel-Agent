@@ -121,6 +121,7 @@ import { loadUserStickerManifest, addUserSticker, deleteUserSticker, getAllStick
 import { parseLocalStickerFileFromUrl, resolveLocalStickerPath } from "./sticker-protocol";
 import { normalizeWindowVisibilitySettings } from "./window-visibility-settings";
 import { PetWindowMoveController } from "./pet-window-movement";
+import { createGifPetWindow, closeGifPetWindow, applyGifPetAlwaysOnTop, applyGifPetVisible, applyGifPetZoom, isGifPetOpen, type GifPetSettings } from "./gif-pet-window";
 import type { StickerConfigItem } from "../shared/sticker-types";
 import { initReranker, getRerankerInstallStatus } from "./rag/reranker";
 import { memoryStore } from "./memory/memory-store"
@@ -134,6 +135,7 @@ import { synthesize as gptsovitsSynthesize } from "./tts/gptsovits-engine";
 import { synthesize as customCloudSynthesize } from "./tts/custom-cloud-engine";
 import { synthesize as mimoSynthesize } from "./tts/mimo-engine";
 import { synthesize as mosslandSynthesize, cloneVoice as mosslandCloneVoice, listVoices as mosslandListVoices } from "./tts/mossland-engine";
+import { synthesize as edgeTtsSynthesize } from "./tts/edge-tts-engine";
 import { synthesizeByEngine } from "./tts/tts-dispatcher";
 import { registerAgUiIpc, type AguiRunInput } from "./agui-bridge";
 import { setWeatherConfig, setSearchConfig, loadTodos, onTodosChange, setDelegateSettings, setUserTimezoneConfig } from "./orchestrator/built-in-tools";
@@ -153,6 +155,7 @@ import {
   type ChatContextMessage,
 } from "./chat-time-context";
 import { setAsrConfig } from "./asr/volcano-asr-engine";
+import { setVoskModelPath, getVoskConfig, ensureVoskReady, isVoskInstalled, stopVoskServer } from "./asr/vosk-asr-engine";
 import { setCallWindow, registerCallIpc, setCallSettings, stopCall } from "./call/call-manager";
 import { initSkills, skillRegistry, buildAutoInjectedSkillContext, buildAutoInjectedSoulContext, buildSkillCatalog, parseSlashCommand, setSkillEnabled, listSkillsForUi } from "./skills";
 import {
@@ -230,7 +233,6 @@ let screenshotService: ScreenshotService | null = null;
 let proactiveChatService: ProactiveChatService | null = null;
 let normalConversationBusyCount = 0;
 let proactiveScreenLocked = false;
-let remielPetProcess: ReturnType<typeof spawn> | null = null;
 const live2dWindowLifecycle = createWindowLifecycleTracker<BrowserWindow>("live2d-main", {
   onClosed: () => { /* no-op：原 setLive2dWindow 已随 opener 子系统一起移除 */ },
 });
@@ -636,6 +638,10 @@ interface GeneralSettings {
   petWindowX?: number;
   /** 桌宠窗口 Y 坐标，未保存时为 undefined */
   petWindowY?: number;
+  /** GIF 桌宠窗口 X 坐标 */
+  gifPetWindowX?: number;
+  /** GIF 桌宠窗口 Y 坐标 */
+  gifPetWindowY?: number;
   sidebarVisible: boolean;
   tasksVisible: boolean;
   launchAtLogin: boolean;
@@ -658,7 +664,7 @@ interface GeneralSettings {
   /** 主动消息最终投递到本地、微信或飞书。 */
   proactiveDeliveryTarget: ProactiveDeliveryTarget;
   // TTS 配置
-  ttsEngine: "off" | "minimax" | "gptsovits" | "custom-cloud" | "mimo";
+  ttsEngine: "off" | "minimax" | "gptsovits" | "custom-cloud" | "mimo" | "mossland" | "edge";
   ttsAutoRead: boolean;
   ttsSpeed: number;
   ttsVolume: number;
@@ -729,6 +735,8 @@ interface GeneralSettings {
   asrVadThreshold: number;
   /** 通话中显示文字转写 */
   asrShowTranscript: boolean;
+  /** Vosk 离线语音识别模型目录路径（如 D:/vosk-model-cn-0.22） */
+  asrVoskModelPath: string;
   /** 截图全局热键（Electron Accelerator 格式，如 "Alt+Shift+S"） */
   screenshotHotkey: string;
 }
@@ -937,6 +945,7 @@ const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   asrVadSilenceMs: 1000,
   asrVadThreshold: 0.01,
   asrShowTranscript: false,
+  asrVoskModelPath: "",
   screenshotHotkey: "Alt+Shift+S",
 };
 
@@ -946,6 +955,16 @@ function getSettingsPath(): string {
 
 function getGeneralSettingsPath(): string {
   return path.join(app.getPath("userData"), "app-settings.json");
+}
+
+/** Save only position keys without triggering applyGeneralSettings side effects */
+function saveGifPetPositionOnly(x: number, y: number): void {
+  try {
+    const before = loadGeneralSettings();
+    const filePath = getGeneralSettingsPath();
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify({ ...before, gifPetWindowX: x, gifPetWindowY: y }, null, 2), "utf8");
+  } catch { /* best effort */ }
 }
 
 
@@ -1330,6 +1349,10 @@ function normalizeGeneralSettings(input: Partial<GeneralSettings> | null | undef
       ? Math.round(input.petWindowX) : undefined,
     petWindowY: typeof input?.petWindowY === "number" && isFinite(input.petWindowY)
       ? Math.round(input.petWindowY) : undefined,
+    gifPetWindowX: typeof input?.gifPetWindowX === "number" && isFinite(input.gifPetWindowX)
+      ? Math.round(input.gifPetWindowX) : undefined,
+    gifPetWindowY: typeof input?.gifPetWindowY === "number" && isFinite(input.gifPetWindowY)
+      ? Math.round(input.gifPetWindowY) : undefined,
     sidebarVisible: windowVisibility.sidebarVisible,
     tasksVisible: windowVisibility.tasksVisible,
     launchAtLogin: Boolean(input?.launchAtLogin),
@@ -1345,7 +1368,7 @@ function normalizeGeneralSettings(input: Partial<GeneralSettings> | null | undef
     proactiveChatMode: normalizeProactiveChatMode(input?.proactiveChatMode),
     proactiveDeliveryTarget: normalizeProactiveDeliveryTarget(input?.proactiveDeliveryTarget),
     // TTS 配置
-    ttsEngine: (["off", "minimax", "gptsovits", "custom-cloud", "mimo"].includes(input?.ttsEngine as string) ? input?.ttsEngine : "off") as GeneralSettings["ttsEngine"],
+    ttsEngine: (["off", "minimax", "gptsovits", "custom-cloud", "mimo", "mossland", "edge"].includes(input?.ttsEngine as string) ? input?.ttsEngine : "off") as GeneralSettings["ttsEngine"],
     ttsAutoRead: input?.ttsAutoRead === undefined ? DEFAULT_GENERAL_SETTINGS.ttsAutoRead : Boolean(input.ttsAutoRead),
     ttsSpeed: typeof input?.ttsSpeed === "number" ? Math.max(0.5, Math.min(2, input.ttsSpeed)) : DEFAULT_GENERAL_SETTINGS.ttsSpeed,
     ttsVolume: typeof input?.ttsVolume === "number" ? Math.max(0, Math.min(1, input.ttsVolume)) : DEFAULT_GENERAL_SETTINGS.ttsVolume,
@@ -1393,6 +1416,7 @@ function normalizeGeneralSettings(input: Partial<GeneralSettings> | null | undef
       ? Math.max(0.001, Math.min(0.5, Number(input.asrVadThreshold)))
       : DEFAULT_GENERAL_SETTINGS.asrVadThreshold,
     asrShowTranscript: Boolean(input?.asrShowTranscript),
+    asrVoskModelPath: typeof input?.asrVoskModelPath === "string" ? input.asrVoskModelPath : "",
     screenshotHotkey: typeof input?.screenshotHotkey === "string" && input.screenshotHotkey.trim()
       ? input.screenshotHotkey.trim() : DEFAULT_GENERAL_SETTINGS.screenshotHotkey,
     ttsGptsovitsBaseUrl: typeof input?.ttsGptsovitsBaseUrl === "string" ? input.ttsGptsovitsBaseUrl : DEFAULT_GENERAL_SETTINGS.ttsGptsovitsBaseUrl,
@@ -1422,11 +1446,12 @@ function loadGeneralSettings(): GeneralSettings {
 }
 
 function applyGeneralSettings(settings: GeneralSettings): void {
-  mainWindow?.setAlwaysOnTop(settings.petAlwaysOnTop, settings.petAlwaysOnTop ? "screen-saver" : "normal");
-  if (settings.petVisible) mainWindow?.show();
-  else mainWindow?.hide();
+  // GIF pet is the primary desktop pet — these settings control it
+  applyGifPetAlwaysOnTop(settings.petAlwaysOnTop);
+  applyGifPetVisible(settings.petVisible);
+  applyGifPetZoom(settings.petZoom);
+  // Cyrene Live2D main window is kept hidden (replaced by GIF pet)
   app.setLoginItemSettings({ openAtLogin: settings.launchAtLogin });
-  applyPetZoom(settings.petZoom);
 }
 
 /**
@@ -2248,8 +2273,8 @@ function buildSystemPrompt(styleFile: string, includeStyle = true): string {
   const soul = loadPromptFile("soul.md");
   if (soul) parts.push(soul);
 
-  const canon = loadPromptFile("canon_quotes.md");
-  if (canon) parts.push(canon);
+  // canon_quotes.md 仅 ask 模式加载；主对话已足够表达人格，省 ~800 tokens
+  // canon 保留在 buildAskQuotesPrompt 中用于角色问答
 
   // 新链路由 build-options 独立注入 style Prompt；旧调用方仍可选择在这里附加 style 文件。
   if (includeStyle && !isChatMode) {
@@ -2269,8 +2294,6 @@ function buildProactivePersonaPrompt(): string {
     // 主动轮完全不携带工具说明；Soul 尾部的 Live2D/联网章节由正常聊天使用。
     parts.push(soul.split("\n## Live2D 与聊天文字的分工")[0].trim());
   }
-  const canon = loadPromptFile("canon_quotes.md");
-  if (canon) parts.push(canon);
   const style = loadPromptFile("styles/01_default.md");
   if (style) parts.push(style);
   return parts.join("\n\n---\n\n");
@@ -2693,42 +2716,6 @@ function attachExternalLinkHandler(win: BrowserWindow): void {
   });
 }
 
-function launchRemielPet(): void {
-  if (remielPetProcess) return;
-
-  const petDir = path.join(__dirname, "..", "..", "..", "remiel-pet", "蕾米桌宠");
-  const petExe = path.join(petDir, "小蕾米.exe");
-
-  if (!fs.existsSync(petExe)) {
-    console.log("[RemielPet] 未找到桌宠程序：", petExe);
-    return;
-  }
-
-  try {
-    remielPetProcess = spawn(petExe, [], {
-      cwd: petDir,
-      detached: false,
-      stdio: "ignore",
-      windowsHide: false,
-    });
-
-    remielPetProcess.on("error", (err) => {
-      console.warn("[RemielPet] 启动失败:", err.message);
-      remielPetProcess = null;
-    });
-
-    remielPetProcess.on("exit", (code) => {
-      console.log("[RemielPet] 已退出, code:", code);
-      remielPetProcess = null;
-    });
-
-    console.log("[RemielPet] 已启动, PID:", remielPetProcess.pid);
-  } catch (err: any) {
-    console.warn("[RemielPet] 启动异常:", err?.message ?? err);
-    remielPetProcess = null;
-  }
-}
-
 function createWindow(): void {
   const settings = loadGeneralSettings();
   let restoreX: number | undefined;
@@ -2859,8 +2846,18 @@ function createWindow(): void {
   );
 
   // 注入 ASR 配置获取器（通话功能用，实时读 GeneralSettings）
+  setVoskModelPath(() => {
+    const s = loadGeneralSettings();
+    return s.asrVoskModelPath ?? path.join(app.getPath("userData"), "vosk-model");
+  });
+
   setAsrConfig(() => {
     const s = loadGeneralSettings();
+    if (s.asrEngine === "local") {
+      const vcfg = getVoskConfig();
+      if (vcfg) return { appKey: "", accessKeyId: "", accessKeySecret: "", language: "zh", engine: "local" };
+      return null;
+    }
     if (s.asrEngine !== "aliyun") return null;
     return { appKey: s.asrAliyunAppKey, accessKeyId: s.asrAliyunAccessKeyId, accessKeySecret: s.asrAliyunAccessKeySecret, language: s.asrLanguage, engine: s.asrEngine };
   });
@@ -3331,8 +3328,18 @@ function createTray(): void {
     {
       label: "显示/隐藏桌宠",
       click: () => {
-        if (mainWindow) {
-          mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
+        const gifPetOpen = isGifPetOpen();
+        if (gifPetOpen) {
+          closeGifPetWindow();
+        } else {
+          // Recreate if previously closed
+          const s = loadGeneralSettings();
+          const gifPetSettings: GifPetSettings = {
+            getPosition: () => ({ x: s.gifPetWindowX, y: s.gifPetWindowY }),
+            savePosition: (x, y) => saveGifPetPositionOnly(x, y),
+            getZoom: () => s.petZoom,
+          };
+          createGifPetWindow(gifPetSettings);
         }
       },
     },
@@ -3721,16 +3728,17 @@ ipcMain.on(IPC.SETTINGS_CLOSE_TASKS, () => {
 
 ipcMain.on(IPC.SETTINGS_SET_PET_ALWAYS_ON_TOP, (_event, value: boolean) => {
   const saved = saveGeneralSettings({ ...loadGeneralSettings(), petAlwaysOnTop: Boolean(value) });
-  mainWindow?.setAlwaysOnTop(saved.petAlwaysOnTop, saved.petAlwaysOnTop ? "screen-saver" : "normal");
+  applyGifPetAlwaysOnTop(saved.petAlwaysOnTop);
 });
 
 ipcMain.on(IPC.SETTINGS_SET_PET_VISIBLE, (_event, value: boolean) => {
-  saveGeneralSettings({ ...loadGeneralSettings(), petVisible: Boolean(value) });
+  const saved = saveGeneralSettings({ ...loadGeneralSettings(), petVisible: Boolean(value) });
+  applyGifPetVisible(saved.petVisible);
 });
 
 ipcMain.on(IPC.SETTINGS_SET_PET_ZOOM, (_event, value: number) => {
   const saved = saveGeneralSettings({ ...loadGeneralSettings(), petZoom: Number(value) });
-  applyPetZoom(saved.petZoom);
+  applyGifPetZoom(saved.petZoom);
 });
 
 ipcMain.handle(IPC.MODEL_CONFIG_GET, () => {
@@ -4697,6 +4705,24 @@ app.whenReady().then(async () => {
     return { voices: result.voices };
   });
 
+  // Edge TTS 合成（微软免费）
+  ipcMain.handle(IPC.TTS_SYNTHESIZE_EDGE, async (_event, payload: {
+    text: string; voice?: string; speed?: number; pitch?: string;
+  }) => {
+    const result = await edgeTtsSynthesize({
+      text: payload.text,
+      voice: payload.voice,
+      speed: payload.speed,
+      pitch: payload.pitch,
+    });
+    return {
+      base64: result.audio.toString("base64"),
+      cacheKey: "",
+      cached: false,
+      format: "mp3",
+    };
+  });
+
   // 聊天会话存储 IPC（chats-store.initialize 会建好 cyrene-chats 目录并加载 index）
   registerChatsIpc();
   initializeProactiveChatService();
@@ -5271,8 +5297,32 @@ app.whenReady().then(async () => {
 
   schedulerEngine.start();
 
-  // 启动蕾米桌宠
-  launchRemielPet();
+  // 启动 GIF 桌宠（替换旧蕾米桌宠 EXE）
+  (() => {
+    // Force petVisible to true — the old EXE pet didn't use this setting,
+    // so it may be false from previous sessions. GIF pet should show by default.
+    const s = loadGeneralSettings();
+    if (!s.petVisible) {
+      fs.writeFileSync(getGeneralSettingsPath(), JSON.stringify({ ...s, petVisible: true }, null, 2), "utf8");
+    }
+
+    const gifPetSettings: GifPetSettings = {
+      getPosition: () => {
+        const s = loadGeneralSettings();
+        return { x: s.gifPetWindowX, y: s.gifPetWindowY };
+      },
+      savePosition: (x, y) => {
+        saveGifPetPositionOnly(x, y);
+      },
+      getZoom: () => {
+        return loadGeneralSettings().petZoom;
+      },
+    };
+    createGifPetWindow(gifPetSettings);
+
+    // Hide the Cyrene Live2D main window — GIF pet replaces it
+    mainWindow?.hide();
+  })();
 
   // 自动播放默认音乐
   autoPlayMusic();
@@ -5282,10 +5332,8 @@ app.on("window-all-closed", () => {});
 
 // 应用退出前把 token 用量缓存落盘（防抖未触发的最后一次写）
 app.on("before-quit", () => {
-  if (remielPetProcess) {
-    try { remielPetProcess.kill(); } catch (_) { /* ignore */ }
-    remielPetProcess = null;
-  }
+  closeGifPetWindow();
+  stopVoskServer();
   petWindowMoveController.dispose();
   schedulerEngine?.stop();
   stopProactiveTrigger();

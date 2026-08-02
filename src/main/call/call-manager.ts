@@ -8,6 +8,7 @@
 import { BrowserWindow, ipcMain } from "electron";
 import { IPC } from "../../shared/ipc-channels";
 import { VolcanoAsrStream, getAsrConfig } from "../asr/volcano-asr-engine";
+import { VoskAsrStream, getVoskConfig, ensureVoskReady, stopVoskServer } from "../asr/vosk-asr-engine";
 import { synthesizeByEngine } from "../tts/tts-dispatcher";
 import type { TtsEngine } from "../../shared/tts-types";
 import { runFunctionCallingLoop } from "../orchestrator";
@@ -19,7 +20,7 @@ const LOG_PREFIX = "[CallManager]";
 export type CallState = "IDLE" | "LISTENING" | "THINKING" | "SPEAKING" | "ERROR" | "ENDED";
 
 let callWindow: BrowserWindow | null = null;
-let asrStream: VolcanoAsrStream | null = null;
+let asrStream: VolcanoAsrStream | VoskAsrStream | null = null;
 let currentState: CallState = "IDLE";
 let finalText = "";
 let active = false;
@@ -123,7 +124,45 @@ function sendTtsAudio(base64: string): void {
 export function startCall(): void {
   if (active) return;
   const cfg = getAsrConfig();
-  if (!cfg || cfg.engine !== "aliyun" || !cfg.appKey || !cfg.accessKeyId || !cfg.accessKeySecret) {
+  if (!cfg) {
+    sendError("ASR 未配置：请在设置→ASR 中选择引擎");
+    sendState("ERROR");
+    return;
+  }
+
+  if (cfg.engine === "local") {
+    const vcfg = getVoskConfig();
+    if (!vcfg) {
+      sendError("Vosk 模型未找到：请下载中文模型并配置路径。下载地址：https://alphacephei.com/vosk/models");
+      sendState("ERROR");
+      return;
+    }
+    active = true;
+    finalText = "";
+    callHistory.length = 0;
+    console.log(LOG_PREFIX, "startCall Vosk 本地 ASR, modelPath:", vcfg.modelPath);
+    ensureVoskReady().then(() => {
+      asrStream = new VoskAsrStream({
+        modelPath: vcfg.modelPath,
+        sampleRate: 16000,
+        onPartial: (text) => sendAsrResult(text, undefined),
+        onFinal: (text) => {
+          finalText = text;
+          sendAsrResult(undefined, text);
+          // Defer to avoid calling stop() inside the flush() that produced this final
+          setTimeout(() => void endTurn(), 0);
+        },
+      });
+      asrStream.start();
+      sendState("LISTENING");
+    }).catch((err) => {
+      sendError("Vosk 初始化失败: " + (err instanceof Error ? err.message : String(err)));
+      sendState("ERROR");
+    });
+    return;
+  }
+
+  if (cfg.engine !== "aliyun" || !cfg.appKey || !cfg.accessKeyId || !cfg.accessKeySecret) {
     sendError("ASR 未配置：请在设置→ASR 中配置阿里云 AppKey 和 AccessKey");
     sendState("ERROR");
     return;
@@ -148,13 +187,14 @@ function startAsrStream(cfg: { appKey: string; accessKeyId: string; accessKeySec
 
 /** 结束本轮（VAD 静默）：停 ASR → 跑 agent → TTS → 播放。 */
 export async function endTurn(): Promise<void> {
-  console.log(LOG_PREFIX, "endTurn 入口: active=", active, "state=", currentState, "finalText.length=", finalText.length);
+  console.log(LOG_PREFIX, "endTurn 入口: active=", active, "state=", currentState, "finalText=", JSON.stringify(finalText));
   if (!active || currentState !== "LISTENING") return;
 
   if (asrStream) asrStream.stop();
 
   const text = finalText.trim();
   finalText = "";
+  console.log(LOG_PREFIX, "endTurn text=", JSON.stringify(text));
 
   if (!text) {
     // 空文本，直接重启 ASR 回 LISTENING

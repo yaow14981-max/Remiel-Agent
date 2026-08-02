@@ -2246,6 +2246,10 @@ interface TtsApi {
     speed?: number; volume?: number; format?: "wav" | "mp3"; timeoutMs?: number;
     expectedCacheKey?: string;
   }) => Promise<{ base64: string; cacheKey: string; cached: boolean; format: "wav" | "mp3" }>;
+  // Edge TTS（微软免费）
+  synthesizeEdge?: (payload: {
+    text: string; voice?: string; speed?: number; pitch?: string;
+  }) => Promise<{ base64: string; cacheKey: string; cached: boolean; format: string }>;
   // 小米 MiMo（返回 base64 + cacheKey + cached + format）
   synthesizeCachedMimo: (payload: {
     apiKey: string; voiceAudioPath?: string; text: string; stylePrompt?: string;
@@ -2905,6 +2909,19 @@ async function synthesizeAndPlayCached(
       return { cacheKey: result.cacheKey };
     } catch (err) {
       console.warn("[TTS] Mossland 合成失败:", err);
+      return null;
+    }
+  }
+
+  if (settings.ttsEngine === "edge") {
+    try {
+      const voice = (settings as any).ttsEdgeVoice ?? "zh-CN-XiaoxiaoNeural";
+      const speed = settings.ttsSpeed;
+      const raw = await window.tts!.synthesizeEdge!({ text, voice, speed });
+      playTtsBase64(raw.base64, raw.format as "mp3", msgId);
+      return { cacheKey: raw.cacheKey };
+    } catch (err) {
+      console.warn("[TTS] Edge TTS 合成失败:", err);
       return null;
     }
   }

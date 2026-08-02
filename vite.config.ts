@@ -16,6 +16,7 @@ export default defineConfig({
         settings: resolve(__dirname, "src/renderer/settings/index.html"),
         stickers: resolve(__dirname, "src/renderer/sticker-manager/index.html"),
         call: resolve(__dirname, "src/renderer/call/index.html"),
+        "gif-pet": resolve(__dirname, "src/renderer/gif-pet/index.html"),
       },
     },
   },
